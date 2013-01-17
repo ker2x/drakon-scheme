@@ -35,9 +35,9 @@ void eat_whitespace(
     c = getc(in);
     
     // item 127
-    if (c != EOF) {
-    } else {
+    if (c == EOF) {
         goto item_145;
+    } else {
     }
     
     // item 131
@@ -138,7 +138,7 @@ void main(
     // item 15
     printf("Welcome to Bootstrap Scheme. " 
     "Use ctrl-c to exit.\n");
-    /* item 250 */
+    /* item 252 */
     init();
     
     item_19 :
