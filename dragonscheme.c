@@ -56,9 +56,9 @@ void eat_whitespace(
     c = getc(in);
     
     // item 136
-    if ((c != EOF) && ((c != '\n'))) {
-        goto item_138;
+    if ((c == EOF) || ((c == '\n'))) {
     } else {
+        goto item_138;
     }
     
     item_145 :
