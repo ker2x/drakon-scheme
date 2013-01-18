@@ -5,7 +5,38 @@ object *the_empty_list;
 object *false;
 object *true;
 
+object *read(FILE *in);
+void write(object *obj);
+
 #define BUFFER_MAX 1000
+#define caar(obj)   car(car(obj))
+#define cadr(obj)   car(cdr(obj))
+#define cdar(obj)   cdr(car(obj))
+#define cddr(obj)   cdr(cdr(obj))
+#define caaar(obj)  car(car(car(obj)))
+#define caadr(obj)  car(car(cdr(obj)))
+#define cadar(obj)  car(cdr(car(obj)))
+#define caddr(obj)  car(cdr(cdr(obj)))
+#define cdaar(obj)  cdr(car(car(obj)))
+#define cdadr(obj)  cdr(car(cdr(obj)))
+#define cddar(obj)  cdr(cdr(car(obj)))
+#define cdddr(obj)  cdr(cdr(cdr(obj)))
+#define caaaar(obj) car(car(car(car(obj))))
+#define caaadr(obj) car(car(car(cdr(obj))))
+#define caadar(obj) car(car(cdr(car(obj))))
+#define caaddr(obj) car(car(cdr(cdr(obj))))
+#define cadaar(obj) car(cdr(car(car(obj))))
+#define cadadr(obj) car(cdr(car(cdr(obj))))
+#define caddar(obj) car(cdr(cdr(car(obj))))
+#define cadddr(obj) car(cdr(cdr(cdr(obj))))
+#define cdaaar(obj) cdr(car(car(car(obj))))
+#define cdaadr(obj) cdr(car(car(cdr(obj))))
+#define cdadar(obj) cdr(car(cdr(car(obj))))
+#define cdaddr(obj) cdr(car(cdr(cdr(obj))))
+#define cddaar(obj) cdr(cdr(car(car(obj))))
+#define cddadr(obj) cdr(cdr(car(cdr(obj))))
+#define cdddar(obj) cdr(cdr(cdr(car(obj))))
+#define cddddr(obj) cdr(cdr(cdr(cdr(obj))))
 object* alloc_object(
     void
 ) {
@@ -25,6 +56,38 @@ object* alloc_object(
         /* item 194 */
         return obj;
     }
+    
+}
+
+object* car(
+    object* pair
+) {
+    // item 480
+    return pair->data.pair.car;
+    
+}
+
+object* cdr(
+    object *pair
+) {
+    // item 492
+    return pair->data.pair.cdr;
+    
+}
+
+object* cons(
+    object* car,
+    object* cdr
+) {
+    // item 466
+    object *obj;
+    /* item 467 */
+    obj = alloc_object();
+    obj->type = PAIR;
+    obj->data.pair.car = car;
+    obj->data.pair.cdr = cdr;
+    /* item 468 */
+    return obj;
     
 }
 
@@ -166,6 +229,14 @@ char is_fixnum(
 ) {
     // item 173
     return obj->type == FIXNUM;
+    
+}
+
+char is_pair(
+    object* obj
+) {
+    // item 474
+    return obj->type == PAIR;
     
 }
 
@@ -454,18 +525,8 @@ object* read(
     
     item_444 :
     if (c == '(') {
-        /* item 447 */
-        eat_whitespace(in);
-        /* item 448 */
-        c = getc(in);
-    } else {
-        goto item_91;
-    }
-    
-    // item 449
-    if (c == ')') {
-        /* item 452 */
-        return the_empty_list;
+        /* item 578 */
+        return read_pair(in);
     } else {
         /* item 453 */
         fprintf(stderr, "unexpected character '%c'. "
@@ -532,6 +593,90 @@ object* read_character(
     peek_expected_delimiter(in);
     /* item 328 */
     return make_character(c);
+    
+}
+
+object* read_pair(
+    FILE *in
+) {
+    // item 543
+    int c;
+    object *car_obj;
+    object *cdr_obj;
+    /* item 544 */
+    eat_whitespace(in);
+    c = getc(in);
+    
+    // item 545
+    if (c == ')') {
+        /* item 548 */
+        return the_empty_list;
+    } else {
+        /* item 549 */
+        ungetc(c, in);
+        car_obj = read(in);
+        eat_whitespace(in);
+        c = getc(in);
+    }
+    
+    // item 550
+    if (c == '.') {
+        /* item 552 */
+        c = peek(in);
+    } else {
+        /* item 568 */
+        ungetc(c, in);
+        cdr_obj = read_pair(in);        
+        return cons(car_obj, cdr_obj);
+    }
+    
+    // item 553
+    if (is_delimiter(c)) {
+        /* item 557 */
+        cdr_obj = read(in);
+        eat_whitespace(in);
+        c = getc(in);
+    } else {
+        /* item 555 */
+        fprintf(stderr, 
+        "dot not followed by delimiter\n");
+        /* item 556 */
+        exit(1);
+        return;
+    }
+    
+    // item 569
+    if (c == ')') {
+        /* item 575 */
+        return cons(car_obj, cdr_obj);
+    } else {
+        /* item 572 */
+        fprintf(stderr,
+        "where was the trailing right paren?\n");
+        /* item 573 */
+        exit(1);
+        return;
+    }
+    
+}
+
+void set_car(
+    object* obj,
+    object* value
+) {
+    // item 486
+    obj->data.pair.car = value;
+    return;
+    
+}
+
+void set_cdr(
+    object* obj,
+    object* value
+) {
+    // item 498
+    obj->data.pair.cdr = value;
+    return;
     
 }
 
@@ -644,10 +789,52 @@ void write(
         printf("()");
         return;
     } else {
+    }
+    
+    // item 290006
+    if (_sw290000_ == PAIR) {
+        /* item 582 */
+        printf("(");
+        write_pair(obj);
+        printf(")");
+        return;
+    } else {
         /* item 37 */
         fprintf(stderr, "cannot write unknown type\n");
         /* item 38 */
         exit(1);
+        return;
+    }
+    
+}
+
+void write_pair(
+    object* pair
+) {
+    // item 588
+    object *car_obj;
+    object *cdr_obj;
+        
+    car_obj = car(pair);
+    cdr_obj = cdr(pair);
+    write(car_obj);
+    
+    // item 589
+    if (cdr_obj->type == PAIR) {
+        /* item 592 */
+        printf(" ");
+        write_pair(cdr_obj);
+        return;
+    } else {
+    }
+    
+    // item 593
+    if (cdr_obj->type == THE_EMPTY_LIST) {
+        return;
+    } else {
+        /* item 595 */
+        printf(" . ");
+        write(cdr_obj);
         return;
     }
     
