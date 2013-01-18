@@ -4,6 +4,11 @@
 object *the_empty_list;
 object *false;
 object *true;
+object *symbol_table;
+
+object *cons(object *car, object *cdr);
+object *car(object *pair);
+object *cdr(object *pair);
 
 object *read(FILE *in);
 void write(object *obj);
