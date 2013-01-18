@@ -25,6 +25,37 @@ object* alloc_object(
     
 }
 
+void eat_expected_string(
+    FILE *in,
+    char *str
+) {
+    // item 277
+    int c;
+    
+    item_278 :
+    if (*str == '\0') {
+        return;
+    } else {
+        /* item 280 */
+        c = getc(in);
+    }
+    
+    // item 281
+    if (c == *str) {
+        /* item 286 */
+        str++;
+        goto item_278;
+    } else {
+        /* item 284 */
+        fprintf(stderr, 
+        "unexpected character '%c'\n", c);
+        /* item 285 */
+        exit(1);
+        return;
+    }
+    
+}
+
 void eat_whitespace(
     FILE *in
 ) {
@@ -98,6 +129,14 @@ char is_boolean(
     
 }
 
+char is_character(
+    object *obj
+) {
+    // item 271
+    return obj->type == CHARACTER;
+    
+}
+
 char is_delimiter(
     int c
 ) {
@@ -157,6 +196,20 @@ void main(
     
 }
 
+object* make_character(
+    char value
+) {
+    // item 263
+    object *obj;
+    /* item 264 */
+    obj = alloc_object();
+    obj->type = CHARACTER;
+    obj->data.character.value = value;
+    /* item 265 */
+    return obj;
+    
+}
+
 object* make_fixnum(
     long value
 ) {
@@ -182,6 +235,22 @@ int peek(
     ungetc(c,in);
     /* item 161 */
     return c;
+    
+}
+
+void peek_expected_delimiter(
+    FILE *in
+) {
+    // item 296
+    if (is_delimiter(peek(in))) {
+        return;
+    } else {
+        /* item 299 */
+        fprintf(stderr, "character not followed by delimiter\n");
+        /* item 300 */
+        exit(1);
+        return;
+    }
     
 }
 
@@ -217,6 +286,14 @@ object* read(
     if (c == 'f') {
         /* item 239 */
         return false;
+        goto item_91;
+    } else {
+    }
+    
+    // item 2310003
+    if (c == '\\') {
+        /* item 342 */
+        return read_character(in);
         goto item_91;
     } else {
         /* item 241 */
@@ -272,11 +349,68 @@ object* read(
     
 }
 
+object* read_character(
+    FILE *in
+) {
+    // item 306
+    int c;
+    /* item 307 */
+    c = getc(in);
+    
+    // item 3080001
+    if (c == EOF) {
+        /* item 315 */
+        fprintf(stderr, "incomplete character literal\n");
+        /* item 330 */
+        exit(1);
+        goto item_329;
+    } else {
+    }
+    
+    // item 3080002
+    if (c == 's') {
+    } else {
+        goto item_3080003;
+    }
+    
+    // item 316
+    if (peek(in) == 'p') {
+        /* item 319 */
+        eat_expected_string(in, "pace");
+        /* item 320 */
+        peek_expected_delimiter(in);
+        /* item 321 */
+        return make_character(' ');
+        goto item_329;
+    } else {
+        goto item_329;
+    }
+    
+    item_3080003 :
+    if ((c == 'n') && (peek(in) == 'e')) {
+        /* item 324 */
+        eat_expected_string(in, "ewline");
+        /* item 325 */
+        peek_expected_delimiter(in);
+        /* item 326 */
+        return make_character('\n');
+    } else {
+    }
+    
+    item_329 :
+    peek_expected_delimiter(in);
+    /* item 328 */
+    return make_character(c);
+    
+}
+
 void write(
     object* obj
 ) {
     int _sw290000_ = 0;
-    // item 290000
+    // item 358
+    char c;
+    /* item 290000 */
     _sw290000_ = obj->type;
     
     // item 290001
@@ -293,10 +427,36 @@ void write(
         printf("#%c", is_false(obj) ? 'f' : 't');
         return;
     } else {
+    }
+    
+    // item 290003
+    if (_sw290000_ == CHARACTER) {
+        /* item 347 */
+        c = obj->data.character.value;
+    } else {
         /* item 37 */
         fprintf(stderr, "cannot write unknown type\n");
         /* item 38 */
         exit(1);
+        return;
+    }
+    
+    // item 3480001
+    if (c == '\n') {
+        /* item 355 */
+        printf("newline");
+        return;
+    } else {
+    }
+    
+    // item 3480002
+    if (c == ' ') {
+        /* item 356 */
+        printf("space");
+        return;
+    } else {
+        /* item 357 */
+        putchar(c);
         return;
     }
     
