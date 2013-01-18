@@ -3,6 +3,8 @@
 
 object *false;
 object *true;
+
+#define BUFFER_MAX 1000
 object* alloc_object(
     void
 ) {
@@ -163,6 +165,14 @@ char is_fixnum(
     
 }
 
+char is_string(
+    object *obj
+) {
+    // item 378
+    return obj->type == STRING;
+    
+}
+
 char is_true(
     object *obj
 ) {
@@ -224,6 +234,32 @@ object* make_fixnum(
     
 }
 
+object* make_string(
+    char* value
+) {
+    // item 364
+    object *obj;
+    /* item 365 */
+    obj = alloc_object();
+    obj->type = STRING;
+    obj->data.string.value = malloc(strlen(value) + 1);
+    
+    // item 366
+    if (obj->data.string.value == NULL) {
+        /* item 369 */
+        fprintf(stderr, "out of memory\n");
+        /* item 370 */
+        exit(1);
+    } else {
+    }
+    
+    // item 371
+    strcpy(obj->data.string.value, value);
+    /* item 372 */
+    return obj;
+    
+}
+
 int peek(
     FILE *in
 ) {
@@ -261,6 +297,8 @@ object* read(
     int c;
     short sign = 1;
     long num = 0;
+    char buffer[BUFFER_MAX];
+    int i;
     /* item 79 */
     eat_whitespace(in);
     /* item 80 */
@@ -315,10 +353,7 @@ object* read(
         /* item 92 */
         sign = -1;
     } else {
-        /* item 113 */
-        fprintf(stderr, 
-        "bad input. Unexpected '%c'\n", c);
-        goto item_91;
+        goto item_379;
     }
     
     item_100 :
@@ -337,10 +372,75 @@ object* read(
         ungetc(c, in);
         /* item 109 */
         return make_fixnum(num);
+        goto item_91;
     } else {
         /* item 111 */
         fprintf(stderr, 
         "number not followed by delimiter\n");
+        goto item_91;
+    }
+    
+    item_379 :
+    if (c == '"') {
+        /* item 382 */
+        i = 0;
+    } else {
+        /* item 113 */
+        fprintf(stderr, 
+        "bad input. Unexpected '%c'\n", c);
+        goto item_91;
+    }
+    
+    item_385 :
+    c = getc(in);
+    
+    // item 386
+    if (c == '"') {
+        /* item 408 */
+        buffer[i] = '\0';
+        return make_string(buffer);
+        goto item_91;
+    } else {
+    }
+    
+    // item 387
+    if (c == '\\') {
+        /* item 389 */
+        c = getc(in);
+    } else {
+        goto item_395;
+    }
+    
+    // item 391
+    if (c == 'n') {
+        /* item 394 */
+        c = '\n';
+    } else {
+    }
+    
+    item_395 :
+    if (c == EOF) {
+        /* item 396 */
+        fprintf(stderr, 
+        "non-terminated string literal\n");
+        /* item 398 */
+        exit(1);
+    } else {
+    }
+    
+    // item 401
+    if (i < BUFFER_MAX - 1) {
+        /* item 402 */
+        buffer[i++] = c;
+        goto item_385;
+    } else {
+        /* item 404 */
+        fprintf(stderr, 
+        "string too long. Maximum length is %d\n",
+        BUFFER_MAX);
+        /* item 405 */
+        exit(1);
+        goto item_385;
     }
     
     item_91 :
@@ -408,8 +508,10 @@ void write(
     object* obj
 ) {
     int _sw290000_ = 0;
+    int _sw4190000_ = 0;
     // item 358
     char c;
+    char *str;
     /* item 290000 */
     _sw290000_ = obj->type;
     
@@ -434,11 +536,7 @@ void write(
         /* item 347 */
         c = obj->data.character.value;
     } else {
-        /* item 37 */
-        fprintf(stderr, "cannot write unknown type\n");
-        /* item 38 */
-        exit(1);
-        return;
+        goto item_290004;
     }
     
     // item 3480001
@@ -459,6 +557,59 @@ void write(
         putchar(c);
         return;
     }
+    
+    item_290004 :
+    if (_sw290000_ == STRING) {
+        /* item 413 */
+        str = obj->data.string.value;
+        /* item 414 */
+        putchar('"');
+    } else {
+        /* item 37 */
+        fprintf(stderr, "cannot write unknown type\n");
+        /* item 38 */
+        exit(1);
+        return;
+    }
+    
+    item_415 :
+    if (*str == '\0') {
+        /* item 434 */
+        putchar('"');
+        return;
+    } else {
+        /* item 4190000 */
+        _sw4190000_ = *str;
+    }
+    
+    // item 4190001
+    if (_sw4190000_ == '\n') {
+        /* item 427 */
+        printf("\\n");
+        goto item_418;
+    } else {
+    }
+    
+    // item 4190002
+    if (_sw4190000_ == '\\') {
+        /* item 428 */
+        printf("\\\\");
+        goto item_418;
+    } else {
+    }
+    
+    // item 4190003
+    if (_sw4190000_ == '"') {
+        /* item 429 */
+        printf("\\\"");
+    } else {
+        /* item 432 */
+        putchar(*str);
+    }
+    
+    item_418 :
+    str++;
+    goto item_415;
     
 }
 
