@@ -6,6 +6,11 @@ object *false;
 object *true;
 object *symbol_table;
 object *quote_symbol;
+object *define_symbol;
+object *set_symbol;
+object *ok_symbol;
+object *the_empty_environment;
+object *the_global_environment;
 
 object *cons(object *car, object *cdr);
 object *car(object *pair);
@@ -43,6 +48,18 @@ void write(object *obj);
 #define cddadr(obj) cdr(cdr(car(cdr(obj))))
 #define cdddar(obj) cdr(cdr(cdr(car(obj))))
 #define cddddr(obj) cdr(cdr(cdr(cdr(obj))))
+void add_binding_to_frame(
+    object* var,
+    object* val,
+    object* frame
+) {
+    // item 748
+    set_car(frame, cons(var, car(frame)));
+    set_cdr(frame, cons(val, cdr(frame)));
+    return;
+    
+}
+
 object* alloc_object(
     void
 ) {
@@ -94,6 +111,43 @@ object* cons(
     obj->data.pair.cdr = cdr;
     /* item 468 */
     return obj;
+    
+}
+
+void define_variable(
+    object *var,
+    object *val,
+    object *env
+) {
+    // item 801
+    object *frame;
+    object *vars;
+    object *vals;
+    /* item 802 */
+    frame = first_frame(env);    
+    vars = frame_variables(frame);
+    vals = frame_values(frame);
+    
+    item_803 :
+    if (!is_the_empty_list(vars)) {
+    } else {
+        /* item 812 */
+        add_binding_to_frame(var, val, frame);
+        return;
+    }
+    
+    // item 806
+    if (var == car(vars)) {
+        /* item 809 */
+        set_car(vals, val);
+        return;
+    } else {
+    }
+    
+    // item 811
+    vars = cdr(vars);
+    vals = cdr(vals);
+    goto item_803;
     
 }
 
@@ -170,6 +224,14 @@ void eat_whitespace(
     
 }
 
+object* enclosing_environment(
+    object* env
+) {
+    // item 717
+    return cdr(env);
+    
+}
+
 object* eval(
     object *exp
 ) {
@@ -201,6 +263,40 @@ object* eval(
     
 }
 
+object* extend_environment(
+    object *vars,
+    object *vals,
+    object *base_env
+) {
+    // item 754
+    return cons(make_frame(vars, vals), base_env);
+    
+}
+
+object* first_frame(
+    object* env
+) {
+    // item 724
+    return car(env);
+    
+}
+
+object* frame_values(
+    object* frame
+) {
+    // item 742
+    return cdr(frame);
+    
+}
+
+object* frame_variables(
+    object* frame
+) {
+    // item 736
+    return car(frame);
+    
+}
+
 void init(
     void
 ) {
@@ -218,6 +314,12 @@ void init(
     /* item 626 */
     symbol_table = the_empty_list;
     quote_symbol = make_symbol("quote");
+    define_symbol = make_symbol("define");
+    set_symbol = make_symbol("set!");
+    ok_symbol = make_symbol("ok");
+    /* item 821 */
+    the_empty_environment = the_empty_list;
+    the_global_environment = setup_environment();
     return;
     
 }
@@ -354,6 +456,51 @@ char is_true(
     
 }
 
+object* lookup_variable_value(
+    object* var,
+    object* env
+) {
+    // item 760
+    object *frame;
+    object *vars;
+    object *vals;
+    
+    item_761 :
+    if (is_the_empty_list(env)) {
+        /* item 774 */
+        fprintf(stderr, "unbound variable\n");
+        /* item 775 */
+        exit(1);
+        return;
+    } else {
+        /* item 763 */
+        frame = first_frame(env);
+        vars = frame_variables(frame);
+        vals = frame_values(frame);
+    }
+    
+    item_764 :
+    if (is_the_empty_list(vars)) {
+        /* item 772 */
+        env = enclosing_environment(env);
+        goto item_761;
+    } else {
+    }
+    
+    // item 766
+    if (var == car(vars)) {
+        /* item 769 */
+        return car(vals);
+    } else {
+    }
+    
+    // item 770
+    vars = cdr(vars);
+    vals = cdr(vals);
+    goto item_764;
+    
+}
+
 void main(
     void
 ) {
@@ -404,6 +551,15 @@ object* make_fixnum(
     obj->data.fixnum.value = value;
     /* item 181 */
     return obj;
+    
+}
+
+object* make_frame(
+    object* variables,
+    object* values
+) {
+    // item 730
+    return cons(variables, values);
     
 }
 
@@ -870,6 +1026,67 @@ void set_cdr(
     // item 498
     obj->data.pair.cdr = value;
     return;
+    
+}
+
+void set_variable_value(
+    object* var,
+    object* val,
+    object* env
+) {
+    // item 781
+    object *frame;
+    object *vars;
+    object *vals;
+    
+    item_782 :
+    if (is_the_empty_list(env)) {
+        /* item 785 */
+        fprintf(stderr, "unbound variable\n");
+        exit(1);
+        return;
+    } else {
+        /* item 784 */
+        frame = first_frame(env);
+        vars = frame_variables(frame);
+        vals = frame_values(frame);
+    }
+    
+    item_786 :
+    if (is_the_empty_list(vars)) {
+        /* item 794 */
+        env = enclosing_environment(env);
+        goto item_782;
+    } else {
+    }
+    
+    // item 788
+    if (var == car(vars)) {
+        /* item 791 */
+        set_car(vals, val);
+        return;
+    } else {
+    }
+    
+    // item 792
+    vars = cdr(vars);
+    vals = cdr(vals);
+    goto item_786;
+    
+}
+
+object* setup_environment(
+    void
+) {
+    // item 818
+    object *initial_env;
+    /* item 819 */
+    initial_env = extend_environment(
+                    the_empty_list,
+                    the_empty_list,
+                    the_empty_environment);
+    /* item 820 */
+    return initial_env;
     
 }
 
