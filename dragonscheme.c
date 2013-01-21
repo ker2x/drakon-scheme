@@ -5,6 +5,7 @@ object *the_empty_list;
 object *false;
 object *true;
 object *symbol_table;
+object *quote_symbol;
 
 object *cons(object *car, object *cdr);
 object *car(object *pair);
@@ -172,8 +173,31 @@ void eat_whitespace(
 object* eval(
     object *exp
 ) {
-    // item 49
-    return exp;
+    // item 694
+    if (is_self_evaluating(exp)) {
+        /* item 697 */
+        return exp;
+        goto item_704;
+    } else {
+    }
+    
+    // item 698
+    if (is_quoted(exp)) {
+        /* item 701 */
+        return text_of_quotation(exp);
+    } else {
+        /* item 702 */
+        fprintf(stderr, 
+        "cannot eval unknown expression type\n");
+        /* item 703 */
+        exit(1);
+    }
+    
+    item_704 :
+    fprintf(stderr, "eval illegal state\n");
+    /* item 705 */
+    exit(1);
+    return;
     
 }
 
@@ -193,6 +217,7 @@ void init(
     the_empty_list->type = THE_EMPTY_LIST;
     /* item 626 */
     symbol_table = the_empty_list;
+    quote_symbol = make_symbol("quote");
     return;
     
 }
@@ -256,6 +281,25 @@ char is_pair(
     
 }
 
+char is_quoted(
+    object* expression
+) {
+    // item 687
+    return is_tagged_list(expression, quote_symbol);
+    
+}
+
+char is_self_evaluating(
+    object* exp
+) {
+    // item 669
+    return is_boolean(exp) ||
+    is_fixnum(exp)    ||
+    is_character(exp) ||
+    is_string(exp);
+    
+}
+
 char is_string(
     object *obj
 ) {
@@ -269,6 +313,28 @@ char is_symbol(
 ) {
     // item 625
     return obj->type == SYMBOL;
+    
+}
+
+char is_tagged_list(
+    object* expression,
+    object* tag
+) {
+    // item 675
+    object *the_car;
+    
+    // item 676
+    if (is_pair(expression)) {
+        /* item 679 */
+        the_car = car(expression);
+        /* item 680 */
+        return is_symbol(the_car) 
+        && (the_car == tag);
+    } else {
+    }
+    
+    // item 681
+    return 0;
     
 }
 
@@ -648,12 +714,19 @@ object* read(
         /* item 578 */
         return read_pair(in);
     } else {
-        /* item 453 */
-        fprintf(stderr, "unexpected character '%c'. "
-        "Expecting ')'\n", c);
-        /* item 454 */
-        exit(1);
     }
+    
+    // item 706
+    if (c == '\'') {
+        /* item 709 */
+        return cons(quote_symbol, 
+        cons(read(in), the_empty_list));
+    } else {
+    }
+    
+    // item 710
+    fprintf(stderr, "bad input. Unexpected '%c'\n", c);
+    exit(1);
     
     item_91 :
     exit(1);
@@ -797,6 +870,14 @@ void set_cdr(
     // item 498
     obj->data.pair.cdr = value;
     return;
+    
+}
+
+object* text_of_quotation(
+    object* exp
+) {
+    // item 693
+    return cadr(exp);
     
 }
 
