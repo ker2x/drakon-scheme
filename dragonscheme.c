@@ -191,6 +191,8 @@ void init(
     /* item 459 */
     the_empty_list = alloc_object();
     the_empty_list->type = THE_EMPTY_LIST;
+    /* item 626 */
+    symbol_table = the_empty_list;
     return;
     
 }
@@ -237,6 +239,15 @@ char is_fixnum(
     
 }
 
+char is_initial(
+    int c
+) {
+    // item 633
+    return isalpha(c) || c == '*' || c == '/' || c == '>' ||
+                 c == '<' || c == '=' || c == '?' || c == '!';
+    
+}
+
 char is_pair(
     object* obj
 ) {
@@ -250,6 +261,14 @@ char is_string(
 ) {
     // item 378
     return obj->type == STRING;
+    
+}
+
+char is_symbol(
+    object *obj
+) {
+    // item 625
+    return obj->type == SYMBOL;
     
 }
 
@@ -348,6 +367,53 @@ object* make_string(
     
 }
 
+object* make_symbol(
+    char* value
+) {
+    // item 601
+    object *obj;
+    object *element;
+    
+    element = symbol_table;
+    
+    item_602 :
+    if (is_the_empty_list(element)) {
+        /* item 612 */
+        obj = alloc_object();
+        obj->type = SYMBOL;
+        obj->data.symbol.value = malloc(strlen(value) + 1);
+    } else {
+        goto item_604;
+    }
+    
+    // item 613
+    if (obj->data.symbol.value == NULL) {
+        /* item 616 */
+        fprintf(stderr, "out of memory\n");
+        /* item 617 */
+        exit(1);
+    } else {
+    }
+    
+    // item 618
+    strcpy(obj->data.symbol.value, value);
+    symbol_table = cons(obj, symbol_table);
+    /* item 619 */
+    return obj;
+    
+    item_604 :
+    if (strcmp(car(element)->data.symbol.value, value) == 0) {
+        /* item 605 */
+        return car(element);
+    } else {
+    }
+    
+    // item 608
+    element = cdr(element);
+    goto item_602;
+    
+}
+
 int peek(
     FILE *in
 ) {
@@ -441,7 +507,7 @@ object* read(
         /* item 92 */
         sign = -1;
     } else {
-        goto item_379;
+        goto item_641;
     }
     
     item_100 :
@@ -465,6 +531,55 @@ object* read(
         /* item 111 */
         fprintf(stderr, 
         "number not followed by delimiter\n");
+        goto item_91;
+    }
+    
+    item_641 :
+    if (is_initial(c) ||
+    ((c == '+' || c == '-') &&
+    is_delimiter(peek(in)))) {
+        /* item 645 */
+        i = 0;
+    } else {
+        goto item_379;
+    }
+    
+    item_646 :
+    if (is_initial(c) || isdigit(c) ||
+    c == '+' || c == '-') {
+    } else {
+        goto item_657;
+    }
+    
+    // item 648
+    if (i < BUFFER_MAX - 1) {
+        /* item 651 */
+        buffer[i++] = c;
+    } else {
+        /* item 652 */
+        fprintf(stderr, "symbol too long. "
+        "Maximum length is %d\n", BUFFER_MAX);
+        /* item 653 */
+        exit(1);
+    }
+    
+    // item 654
+    c = getc(in);
+    goto item_646;
+    
+    item_657 :
+    if (is_delimiter(c)) {
+        /* item 660 */
+        buffer[i] = '\0';
+        ungetc(c, in);
+        return make_symbol(buffer);
+        goto item_91;
+    } else {
+        /* item 661 */
+        fprintf(stderr, 
+        "symbol not followed by delimiter. "
+        "Found '%c'\n", c);
+        exit(1);
         goto item_91;
     }
     
@@ -802,6 +917,14 @@ void write(
         printf("(");
         write_pair(obj);
         printf(")");
+        return;
+    } else {
+    }
+    
+    // item 290007
+    if (_sw290000_ == SYMBOL) {
+        /* item 636 */
+        printf("%s", obj->data.symbol.value);
         return;
     } else {
         /* item 37 */
