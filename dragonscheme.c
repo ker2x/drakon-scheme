@@ -15,8 +15,9 @@ object *the_global_environment;
 object *cons(object *car, object *cdr);
 object *car(object *pair);
 object *cdr(object *pair);
-
 object *read(FILE *in);
+object *eval(object *exp, object *env);
+
 void write(object *obj);
 
 #define BUFFER_MAX 1000
@@ -79,6 +80,22 @@ object* alloc_object(
         /* item 194 */
         return obj;
     }
+    
+}
+
+object* assignment_value(
+    object* exp
+) {
+    // item 854
+    return car(cdr(cdr(exp)));
+    
+}
+
+object* assignment_variable(
+    object* exp
+) {
+    // item 848
+    return car(cdr(exp));
     
 }
 
@@ -148,6 +165,22 @@ void define_variable(
     vars = cdr(vars);
     vals = cdr(vals);
     goto item_803;
+    
+}
+
+object* definition_value(
+    object* exp
+) {
+    // item 872
+    return caddr(exp);
+    
+}
+
+object* definition_variable(
+    object* exp
+) {
+    // item 866
+    return cadr(exp);
     
 }
 
@@ -233,7 +266,8 @@ object* enclosing_environment(
 }
 
 object* eval(
-    object *exp
+    object *exp,
+    object *env
 ) {
     // item 694
     if (is_self_evaluating(exp)) {
@@ -243,10 +277,34 @@ object* eval(
     } else {
     }
     
+    // item 887
+    if (is_variable(exp)) {
+        /* item 890 */
+        return lookup_variable_value(exp, env);
+        goto item_704;
+    } else {
+    }
+    
     // item 698
     if (is_quoted(exp)) {
         /* item 701 */
         return text_of_quotation(exp);
+        goto item_704;
+    } else {
+    }
+    
+    // item 891
+    if (is_assignment(exp)) {
+        /* item 894 */
+        return eval_assignment(exp, env);
+        goto item_704;
+    } else {
+    }
+    
+    // item 895
+    if (is_definition(exp)) {
+        /* item 897 */
+        return eval_definition(exp, env);
     } else {
         /* item 702 */
         fprintf(stderr, 
@@ -260,6 +318,32 @@ object* eval(
     /* item 705 */
     exit(1);
     return;
+    
+}
+
+object* eval_assignment(
+    object* exp,
+    object* env
+) {
+    // item 878
+    set_variable_value(assignment_variable(exp),
+                           eval(assignment_value(exp), env),
+                           env);
+    /* item 879 */
+    return ok_symbol;
+    
+}
+
+object* eval_definition(
+    object* exp,
+    object* env
+) {
+    // item 885
+    define_variable(definition_variable(exp),
+                        eval(definition_value(exp), env),
+                        env);
+    /* item 886 */
+    return ok_symbol;
     
 }
 
@@ -324,6 +408,15 @@ void init(
     
 }
 
+char is_assignment(
+    object* exp
+) {
+    // item 834
+     return is_tagged_list(exp, set_symbol);
+    return;
+    
+}
+
 char is_boolean(
     object *obj
 ) {
@@ -337,6 +430,14 @@ char is_character(
 ) {
     // item 271
     return obj->type == CHARACTER;
+    
+}
+
+char is_definition(
+    object* exp
+) {
+    // item 860
+    return is_tagged_list(exp, define_symbol);
     
 }
 
@@ -456,6 +557,14 @@ char is_true(
     
 }
 
+char is_variable(
+    object* expression
+) {
+    // item 828
+    return is_symbol(expression);
+    
+}
+
 object* lookup_variable_value(
     object* var,
     object* env
@@ -513,7 +622,7 @@ void main(
     item_19 :
     printf("> ");
     /* item 18 */
-    write(eval(read(stdin)));
+    write(eval(read(stdin),the_global_environment));
     /* item 20 */
     printf("\n");
     
@@ -1237,12 +1346,13 @@ void write(
 void write_pair(
     object* pair
 ) {
-    // item 588
+    // item 840
     object *car_obj;
     object *cdr_obj;
-        
+    /* item 588 */
     car_obj = car(pair);
     cdr_obj = cdr(pair);
+    /* item 841 */
     write(car_obj);
     
     // item 589
