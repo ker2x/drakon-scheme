@@ -9,6 +9,7 @@ object *quote_symbol;
 object *define_symbol;
 object *set_symbol;
 object *ok_symbol;
+object *if_symbol;
 object *the_empty_environment;
 object *the_global_environment;
 
@@ -269,6 +270,9 @@ object* eval(
     object *exp,
     object *env
 ) {
+    // item 931
+    tailcall:
+    
     // item 694
     if (is_self_evaluating(exp)) {
         /* item 697 */
@@ -305,13 +309,26 @@ object* eval(
     if (is_definition(exp)) {
         /* item 897 */
         return eval_definition(exp, env);
+        goto item_704;
     } else {
-        /* item 702 */
-        fprintf(stderr, 
-        "cannot eval unknown expression type\n");
-        /* item 703 */
-        exit(1);
     }
+    
+    // item 927
+    if (is_if(exp)) {
+        /* item 930 */
+        exp = is_true(eval(if_predicate(exp), env)) ?
+                          if_consequent(exp) :
+                          if_alternative(exp);
+        /* item 932 */
+        goto tailcall;
+    } else {
+    }
+    
+    // item 702
+    fprintf(stderr, 
+    "cannot eval unknown expression type\n");
+    /* item 703 */
+    exit(1);
     
     item_704 :
     fprintf(stderr, "eval illegal state\n");
@@ -381,6 +398,36 @@ object* frame_variables(
     
 }
 
+object* if_alternative(
+    object* exp
+) {
+    // item 923
+    if (is_the_empty_list(cdddr(exp))) {
+        /* item 922 */
+        return false;
+    } else {
+        /* item 926 */
+        return cadddr(exp);
+    }
+    
+}
+
+object* if_consequent(
+    object* exp
+) {
+    // item 915
+    return caddr(exp);
+    
+}
+
+object* if_predicate(
+    object* exp
+) {
+    // item 909
+    return cadr(exp);
+    
+}
+
 void init(
     void
 ) {
@@ -401,6 +448,7 @@ void init(
     define_symbol = make_symbol("define");
     set_symbol = make_symbol("set!");
     ok_symbol = make_symbol("ok");
+    if_symbol = make_symbol("if");
     /* item 821 */
     the_empty_environment = the_empty_list;
     the_global_environment = setup_environment();
@@ -464,6 +512,14 @@ char is_fixnum(
 ) {
     // item 173
     return obj->type == FIXNUM;
+    
+}
+
+char is_if(
+    object* expression
+) {
+    // item 903
+    return is_tagged_list(expression, if_symbol);
     
 }
 
