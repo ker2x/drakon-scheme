@@ -62,6 +62,25 @@ void add_binding_to_frame(
     
 }
 
+object* add_proc(
+    object *arguments
+) {
+    // item 952
+    long result = 0;
+    
+    item_953 :
+    if (!is_the_empty_list(arguments)) {
+        /* item 955 */
+        result += (car(arguments))->data.fixnum.value;
+        arguments = cdr(arguments);
+        goto item_953;
+    } else {
+        /* item 957 */
+        return make_fixnum(result);
+    }
+    
+}
+
 object* alloc_object(
     void
 ) {
@@ -270,7 +289,10 @@ object* eval(
     object *exp,
     object *env
 ) {
-    // item 931
+    // item 1007
+    object *procedure;
+    object *arguments;
+    /* item 931 */
     tailcall:
     
     // item 694
@@ -321,6 +343,15 @@ object* eval(
                           if_alternative(exp);
         /* item 932 */
         goto tailcall;
+    } else {
+    }
+    
+    // item 1008
+    if (is_application(exp)) {
+        /* item 1011 */
+        procedure = eval(operator(exp), env);
+        arguments = list_of_values(operands(exp), env);
+        return (procedure->data.primitive_proc.fn)(arguments);
     } else {
     }
     
@@ -379,6 +410,14 @@ object* first_frame(
 ) {
     // item 724
     return car(env);
+    
+}
+
+object* first_operand(
+    object* ops
+) {
+    // item 989
+    return car(ops);
     
 }
 
@@ -452,7 +491,19 @@ void init(
     /* item 821 */
     the_empty_environment = the_empty_list;
     the_global_environment = setup_environment();
+    /* item 958 */
+    define_variable(make_symbol("+"),
+                    make_primitive_proc(add_proc),
+                    the_global_environment);
     return;
+    
+}
+
+char is_application(
+    object* exp
+) {
+    // item 965
+    return is_pair(exp);
     
 }
 
@@ -532,11 +583,27 @@ char is_initial(
     
 }
 
+char is_no_operands(
+    object* ops
+) {
+    // item 983
+    return is_the_empty_list(ops);
+    
+}
+
 char is_pair(
     object* obj
 ) {
     // item 474
     return obj->type == PAIR;
+    
+}
+
+char is_primitive_proc(
+    object* obj
+) {
+    // item 946
+    return obj->type == PRIMITIVE_PROC;
     
 }
 
@@ -618,6 +685,22 @@ char is_variable(
 ) {
     // item 828
     return is_symbol(expression);
+    
+}
+
+object* list_of_values(
+    object *exps,
+    object *env
+) {
+    // item 1001
+    if (is_no_operands(exps)) {
+        /* item 1004 */
+        return the_empty_list;
+    } else {
+        /* item 1005 */
+        return cons(eval(first_operand(exps), env),
+         list_of_values(rest_operands(exps), env));
+    }
     
 }
 
@@ -728,6 +811,20 @@ object* make_frame(
     
 }
 
+object* make_primitive_proc(
+    object *(*fn)(struct object *arguments)
+) {
+    // item 938
+    object *obj;
+    /* item 939 */
+    obj = alloc_object();
+    obj->type = PRIMITIVE_PROC;
+    obj->data.primitive_proc.fn = fn;
+    /* item 940 */
+    return obj;
+    
+}
+
 object* make_string(
     char* value
 ) {
@@ -798,6 +895,22 @@ object* make_symbol(
     // item 608
     element = cdr(element);
     goto item_602;
+    
+}
+
+object* operands(
+    object* exp
+) {
+    // item 977
+    return cdr(exp);
+    
+}
+
+object* operator(
+    object *exp
+) {
+    // item 971
+    return car(exp);
     
 }
 
@@ -1174,6 +1287,14 @@ object* read_pair(
     
 }
 
+object* rest_operands(
+    object* ops
+) {
+    // item 995
+    return cdr(ops);
+    
+}
+
 void set_car(
     object* obj,
     object* value
@@ -1388,6 +1509,14 @@ void write(
     if (_sw290000_ == SYMBOL) {
         /* item 636 */
         printf("%s", obj->data.symbol.value);
+        return;
+    } else {
+    }
+    
+    // item 290008
+    if (_sw290000_ == PRIMITIVE_PROC) {
+        /* item 1015 */
+        printf("#<procedure>");
         return;
     } else {
         /* item 37 */
