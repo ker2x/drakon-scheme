@@ -10,12 +10,21 @@ object *define_symbol;
 object *set_symbol;
 object *ok_symbol;
 object *if_symbol;
+object *lambda_symbol;
+object *begin_symbol;
+object *cond_symbol;
+object *else_symbol;
+object *let_symbol;
+object *and_symbol;
+object *or_symbol;
+object *eof_object;
 object *the_empty_environment;
 object *the_global_environment;
 
 object *cons(object *car, object *cdr);
 object *car(object *pair);
 object *cdr(object *pair);
+
 object *read(FILE *in);
 object *eval(object *exp, object *env);
 
